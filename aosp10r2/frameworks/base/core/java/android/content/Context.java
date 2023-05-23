@@ -852,11 +852,16 @@ public abstract class Context {
      * to any callers for the same name, meaning they will see each other's
      * edits as soon as they are made.
      *
-     * This method is thead-safe.
+     * <p>This method is thread-safe.
      *
-     * @param name Desired preferences file. If a preferences file by this name
-     * does not exist, it will be created when you retrieve an
-     * editor (SharedPreferences.edit()) and then commit changes (Editor.commit()).
+     * <p>If the preferences directory does not already exist, it will be created when this method
+     * is called.
+     *
+     * <p>If a preferences file by this name does not exist, it will be created when you retrieve an
+     * editor ({@link SharedPreferences#edit()}) and then commit changes ({@link
+     * SharedPreferences.Editor#commit()} or {@link SharedPreferences.Editor#apply()}).
+     *
+     * @param name Desired preferences file.
      * @param mode Operating mode.
      *
      * @return The single {@link SharedPreferences} instance that can be used
@@ -1887,7 +1892,7 @@ public abstract class Context {
      *
      * @param intents An array of Intents to be started.
      * @param options Additional options for how the Activity should be started.
-     * See {@link android.content.Context#startActivity(Intent, Bundle)}
+     * See {@link Context#startActivity(Intent, Bundle)}
      * Context.startActivity(Intent, Bundle)} for more details.
      *
      * @throws ActivityNotFoundException &nbsp;
@@ -1915,7 +1920,7 @@ public abstract class Context {
      * @param intents An array of Intents to be started.
      * @param options Additional options for how the Activity should be started.
      * @param userHandle The user for whom to launch the activities
-     * See {@link android.content.Context#startActivity(Intent, Bundle)}
+     * See {@link Context#startActivity(Intent, Bundle)}
      * Context.startActivity(Intent, Bundle)} for more details.
      *
      * @return The corresponding flag {@link ActivityManager#START_CANCELED},
@@ -1969,7 +1974,7 @@ public abstract class Context {
      * <var>flagsMask</var>
      * @param extraFlags Always set to 0.
      * @param options Additional options for how the Activity should be started.
-     * See {@link android.content.Context#startActivity(Intent, Bundle)}
+     * See {@link Context#startActivity(Intent, Bundle)}
      * Context.startActivity(Intent, Bundle)} for more details.  If options
      * have also been supplied by the IntentSender, options given here will
      * override any that conflict with those given by the IntentSender.
@@ -4108,6 +4113,9 @@ public abstract class Context {
 
     /**
      * Official published name of the app prediction service.
+     *
+     * <p><b>NOTE: </b> this service is optional; callers of
+     * {@code Context.getSystemServiceName(APP_PREDICTION_SERVICE)} should check for {@code null}.
      *
      * @hide
      * @see #getSystemService(String)

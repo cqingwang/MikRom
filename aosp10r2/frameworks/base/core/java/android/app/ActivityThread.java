@@ -6126,7 +6126,7 @@ public final class ActivityThread extends ClientTransactionHandler {
         LocaleList.setDefault(new LocaleList(bestLocale, newLocaleList));
     }
 
-
+    @UnsupportedAppUsage
     private void handleBindApplication(AppBindData data) {
         // Register the UI Thread as a sensitive thread to the runtime.
         VMRuntime.registerSensitiveThread();
@@ -6477,7 +6477,6 @@ public final class ActivityThread extends ClientTransactionHandler {
                     "Exception thrown in onCreate() of "
                     + data.instrumentationName + ": " + e.toString(), e);
             }
-
             try {
                 mInstrumentation.callApplicationOnCreate(app);
             } catch (Exception e) {

@@ -57,6 +57,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageParserCacheHelper.ReadHelper;
 import android.content.pm.PackageParserCacheHelper.WriteHelper;
+import android.content.pm.permission.SplitPermissionInfoParcelable;
 import android.content.pm.split.DefaultSplitAssetLoader;
 import android.content.pm.split.SplitAssetDependencyLoader;
 import android.content.pm.split.SplitAssetLoader;
@@ -104,6 +105,7 @@ import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.os.ClassLoaderFactory;
 import com.android.internal.util.ArrayUtils;
 import com.android.internal.util.XmlUtils;
+import com.android.server.SystemConfig;
 
 import cn.mik.Fartext;
 import libcore.io.IoUtils;
@@ -282,10 +284,10 @@ public class PackageParser {
      */
     @UnsupportedAppUsage
     public static final PackageParser.NewPermissionInfo NEW_PERMISSIONS[] =
-        new PackageParser.NewPermissionInfo[] {
-            new PackageParser.NewPermissionInfo(android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        new NewPermissionInfo[] {
+            new NewPermissionInfo(android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     android.os.Build.VERSION_CODES.DONUT, 0),
-            new PackageParser.NewPermissionInfo(android.Manifest.permission.READ_PHONE_STATE,
+            new NewPermissionInfo(android.Manifest.permission.READ_PHONE_STATE,
                     android.os.Build.VERSION_CODES.DONUT, 0)
     };
 
@@ -625,9 +627,9 @@ public class PackageParser {
      * @param flags indicating which optional information is included.
      */
     @UnsupportedAppUsage
-    public static PackageInfo generatePackageInfo(PackageParser.Package p,
-            int gids[], int flags, long firstInstallTime, long lastUpdateTime,
-            Set<String> grantedPermissions, PackageUserState state) {
+    public static PackageInfo generatePackageInfo(Package p,
+                                                  int gids[], int flags, long firstInstallTime, long lastUpdateTime,
+                                                  Set<String> grantedPermissions, PackageUserState state) {
 
         return generatePackageInfo(p, gids, flags, firstInstallTime, lastUpdateTime,
                 grantedPermissions, state, UserHandle.getCallingUserId());
@@ -660,9 +662,9 @@ public class PackageParser {
     }
 
     @UnsupportedAppUsage
-    public static PackageInfo generatePackageInfo(PackageParser.Package p,
-            int gids[], int flags, long firstInstallTime, long lastUpdateTime,
-            Set<String> grantedPermissions, PackageUserState state, int userId) {
+    public static PackageInfo generatePackageInfo(Package p,
+                                                  int gids[], int flags, long firstInstallTime, long lastUpdateTime,
+                                                  Set<String> grantedPermissions, PackageUserState state, int userId) {
         if (!checkUseInstalledOrHidden(flags, state, p.applicationInfo) || !p.isMatch(flags)) {
             return null;
         }
@@ -1071,7 +1073,7 @@ public class PackageParser {
         final ReadHelper helper = new ReadHelper(p);
         helper.startAndInstall();
 
-        PackageParser.Package pkg = new PackageParser.Package(p);
+        Package pkg = new Package(p);
 
         p.recycle();
 
@@ -2461,7 +2463,7 @@ public class PackageParser {
         final int NP = PackageParser.NEW_PERMISSIONS.length;
         StringBuilder newPermsMsg = null;
         for (int ip=0; ip<NP; ip++) {
-            final PackageParser.NewPermissionInfo npi
+            final NewPermissionInfo npi
                     = PackageParser.NEW_PERMISSIONS[ip];
             if (pkg.applicationInfo.targetSdkVersion >= npi.sdkVersion) {
                 break;
@@ -2483,11 +2485,10 @@ public class PackageParser {
             Slog.i(TAG, newPermsMsg.toString());
         }
 
-
-        final int NS = PermissionManager.SPLIT_PERMISSIONS.size();
-        for (int is=0; is<NS; is++) {
-            final PermissionManager.SplitPermissionInfo spi =
-                    PermissionManager.SPLIT_PERMISSIONS.get(is);
+        List<SplitPermissionInfoParcelable> splitPermissions = getSplitPermissions();
+        final int listSize = splitPermissions.size();
+        for (int is = 0; is < listSize; is++) {
+            final SplitPermissionInfoParcelable spi = splitPermissions.get(is);
             if (pkg.applicationInfo.targetSdkVersion >= spi.getTargetSdk()
                     || !pkg.requestedPermissions.contains(spi.getSplitPermission())) {
                 continue;
@@ -2539,6 +2540,23 @@ public class PackageParser {
         }
 
         return pkg;
+    }
+
+    private List<SplitPermissionInfoParcelable> getSplitPermissions() {
+        // PackageManager runs this code during initialization prior to registering with
+        // ServiceManager, so we can't use the PackageManager API.  Instead, just read from
+        // SystemConfig directly when in any SystemProcess and only use PackageManager when not in
+        // one.
+        if (ActivityThread.isSystem()) {
+            return PermissionManager.splitPermissionInfoListToParcelableList(
+                    SystemConfig.getInstance().getSplitPermissions());
+        } else {
+            try {
+                return ActivityThread.getPackageManager().getSplitPermissions();
+            } catch (RemoteException e) {
+                throw e.rethrowFromSystemServer();
+            }
+        }
     }
 
     private boolean checkOverlayRequiredSystemProperty(String propName, String propValue) {
@@ -4278,7 +4296,7 @@ public class PackageParser {
      * This activity should be invisible to user and user should not know or see it.
      */
     private @NonNull PackageParser.Activity generateAppDetailsHiddenActivity(
-            PackageParser.Package owner, int flags, String[] outError,
+            Package owner, int flags, String[] outError,
             boolean hardwareAccelerated) {
 
         // Build custom App Details activity info instead of parsing it from xml
@@ -5925,10 +5943,10 @@ public class PackageParser {
      */
     public static final class SigningDetails implements Parcelable {
 
-        @IntDef({SigningDetails.SignatureSchemeVersion.UNKNOWN,
-                SigningDetails.SignatureSchemeVersion.JAR,
-                SigningDetails.SignatureSchemeVersion.SIGNING_BLOCK_V2,
-                SigningDetails.SignatureSchemeVersion.SIGNING_BLOCK_V3})
+        @IntDef({SignatureSchemeVersion.UNKNOWN,
+                SignatureSchemeVersion.JAR,
+                SignatureSchemeVersion.SIGNING_BLOCK_V2,
+                SignatureSchemeVersion.SIGNING_BLOCK_V3})
         public @interface SignatureSchemeVersion {
             int UNKNOWN = 0;
             int JAR = 1;
