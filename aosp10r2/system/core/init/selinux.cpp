@@ -97,7 +97,7 @@ EnforcingStatus StatusFromCmdline() {
 }
 
 bool IsEnforcing() {
-    return false;
+//    return false;
     if (ALLOW_PERMISSIVE_SELINUX) {
         return StatusFromCmdline() == SELINUX_ENFORCING;
     }
