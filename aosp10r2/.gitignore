@@ -4,6 +4,10 @@
 /tools
 /out
 .idea
+/k/out
+/k/prebuilts
+/k/prebuilts-master
+/k/.idea
 .DS_Store
 test
 /platform_testing
@@ -20,3 +24,4 @@ test
 /bootable
 /kernel
 protobuf-3.0.0
+.repo
